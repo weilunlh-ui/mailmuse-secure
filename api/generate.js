@@ -13,6 +13,7 @@ export default async function handler(req, res) {
       detectedScenario,
       finalScenario,
       situation,
+      incomingEmail,
       tone,
       length,
       senderName,
@@ -48,8 +49,7 @@ ${instruction}
 Rules:
 - Keep the rewritten email in the same language as the current email.
 - If the user clearly requested an output language in the original situation, preserve that language.
-- The requested output language may be any language.
-- Detected output language request from original user situation: ${requestedOutputLanguage || 'Not explicitly specified'}
+- If the original task was a reply, keep it as a reply.
 - Keep a subject line if one exists.
 - Only output the rewritten email.
 - Do not add commentary.
@@ -57,6 +57,9 @@ Rules:
 
 Original user situation:
 ${situation || ''}
+
+Original received email, if any:
+${incomingEmail || ''}
 
 Email to rewrite:
 ${currentEmail}
@@ -66,8 +69,8 @@ ${currentEmail}
       return res.status(200).json({ email: rewrittenEmail });
     }
 
-    if (!situation) {
-      return res.status(400).json({ error: 'Missing situation' });
+    if (!situation && !incomingEmail) {
+      return res.status(400).json({ error: 'Missing situation or incomingEmail' });
     }
 
     const scenarioGuidance = getScenarioGuidance(finalScenario);
@@ -79,7 +82,59 @@ ${currentEmail}
         ? 'About 100 to 150 words.'
         : 'About 150 to 220 words.';
 
-    const prompt = `
+    let prompt = '';
+
+    if (incomingEmail && incomingEmail.trim()) {
+      prompt = `
+You are MailMuse, an expert business communication specialist and work email assistant.
+
+Your task is to write a professional reply email.
+
+Core instructions:
+- The received email may be in any language.
+- Detect the language of the received email.
+- If the user explicitly requested an output language, write only in that requested language.
+- If the user did not explicitly request an output language, default to the same language as the received email.
+- Understand the received email first, then draft an appropriate reply.
+- Use the user's typed situation as an extra instruction for how to reply.
+- Do NOT invent business details that were not supported by the received email or user's situation.
+- Keep the reply natural, professional, and ready to send.
+- Include a short relevant subject line at the top if appropriate.
+- Do not add explanations before or after the email.
+
+Tone rules:
+- Professional: neutral and business-like
+- Polite: respectful and considerate
+- Friendly: warm but still professional
+- Firm: clear and direct but respectful
+
+Length rule:
+- ${lengthRule}
+
+Reply context:
+- Audience: ${audience}
+- Selected scenario in UI: ${selectedScenario}
+- Detected scenario from situation: ${detectedScenario}
+- Final scenario to follow: ${finalScenario}
+- Output language request detected from user's situation: ${requestedOutputLanguage}
+
+Specific scenario guidance:
+${scenarioGuidance}
+
+Received email:
+${incomingEmail}
+
+User's additional reply instruction:
+${situation || 'No additional instruction provided.'}
+
+${recipientName ? `Recipient name to use if natural: ${recipientName}` : 'Recipient name is not provided.'}
+${senderName ? `Sender name to use in sign-off: ${senderName}` : 'If no sender name is provided, use a neutral professional sign-off without a name.'}
+
+Write the full reply email now.
+Only output the email.
+      `.trim();
+    } else {
+      prompt = `
 You are MailMuse, an expert business communication specialist and work email assistant.
 
 Write one polished, natural, practical work email based on the details below.
@@ -129,7 +184,8 @@ ${senderName ? `- Sender name to use in sign-off: ${senderName}` : '- If no send
 
 Write the full email now.
 Only output the email.
-    `.trim();
+      `.trim();
+    }
 
     const email = await callOpenAI(prompt);
     return res.status(200).json({ email });
