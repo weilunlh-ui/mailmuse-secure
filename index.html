@@ -6,8 +6,19 @@
   <title>MailMuse — AI Work Email Generator</title>
   <meta
     name="description"
-    content="MailMuse helps you write professional work emails for clients, suppliers, and internal teams in seconds."
+    content="Write professional work emails in seconds. Describe the situation and MailMuse generates the email for you."
   />
+  <meta
+    name="keywords"
+    content="AI email generator, work email AI, professional email writer, business email generator"
+  />
+  <link rel="icon" type="image/png" href="mailmuse-logo.png" />
+
+  <!-- Replace YOUR_DOMAIN with your actual deployed domain when you set up Plausible -->
+  <!-- Example:
+  <script defer data-domain="mailmuse-secure.vercel.app" src="https://plausible.io/js/script.js"></script>
+  -->
+
   <style>
     :root {
       --bg: #0b1020;
@@ -441,6 +452,12 @@
       font-size: 13px;
     }
 
+    .footer small {
+      display: block;
+      margin-top: 6px;
+      opacity: 0.9;
+    }
+
     @media (max-width: 1080px) {
       .layout {
         grid-template-columns: 1fr;
@@ -686,7 +703,10 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
       </div>
     </div>
 
-    <div class="footer">MailMuse v7 • AI Work Email Generator • Reply mode enabled • Feedback welcome</div>
+    <div class="footer">
+      MailMuse v7.1 • AI Work Email Generator • Reply mode enabled • Feedback welcome
+      <small>No email content is stored on our servers. AI generation is processed securely.</small>
+    </div>
   </div>
 
   <script>
@@ -834,6 +854,12 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
 
     let currentAudience = 'Client';
     let isGenerating = false;
+
+    function trackEvent(name) {
+      if (typeof window.plausible === 'function') {
+        window.plausible(name);
+      }
+    }
 
     function setStatus(message, type = 'info') {
       statusBox.textContent = message;
@@ -1179,6 +1205,8 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
         return;
       }
 
+      trackEvent('generate-email');
+
       const scenarioPayload = getScenarioPayloadFromUI();
 
       setGeneratingUI(true, 'Generating...');
@@ -1245,6 +1273,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
     }
 
     upgradeBtn.addEventListener('click', () => {
+      trackEvent('upgrade-click');
       setStatus('Connect this button to your PayPal payment link later.', 'info');
     });
 
