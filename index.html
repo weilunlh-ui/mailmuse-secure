@@ -505,14 +505,14 @@
           <h2 class="hero-title">Write professional work emails in seconds.</h2>
           <p class="lead">
             Describe the situation. MailMuse writes the email for you.
-            Perfect for client follow-ups, supplier communication, and internal updates.
+            Perfect for client follow-ups, supplier communication, internal updates, and email replies.
           </p>
           <div class="helper">Try it instantly — no signup required.</div>
           <div class="mini-grid">
             <div class="mini-box"><strong>Client emails</strong>Follow-ups, payment reminders, proposals, negotiations, meeting requests.</div>
             <div class="mini-box"><strong>Supplier emails</strong>RFQs, delay complaints, order confirmations, pricing discussions.</div>
             <div class="mini-box"><strong>Internal emails</strong>Status updates, explanations, requests, follow-ups, project updates.</div>
-            <div class="mini-box"><strong>Built for speed</strong>Choose a scenario, generate a draft, then rewrite or send with Gmail.</div>
+            <div class="mini-box"><strong>Reply mode</strong>Paste the email you received and MailMuse drafts a professional reply instantly.</div>
           </div>
         </section>
 
@@ -542,7 +542,7 @@
           <h3>Why users would choose this</h3>
           <div class="trust-grid">
             <div class="trust-box"><strong>No prompt writing</strong>Users choose a work scenario instead of figuring out how to ask AI properly.</div>
-            <div class="trust-box"><strong>Built for work</strong>Everything is focused on client, supplier, and internal communication.</div>
+            <div class="trust-box"><strong>Built for work</strong>Everything is focused on client, supplier, internal, and reply communication.</div>
             <div class="trust-box"><strong>Fast workflow</strong>Generate, rewrite, copy, and open in Gmail without jumping between tools.</div>
             <div class="trust-box"><strong>Safer tone control</strong>It is easier to make an email more polite or firmer without rewriting from scratch.</div>
           </div>
@@ -585,6 +585,18 @@
               You can type in any language. Users do not need to choose input language or output language separately.
             </div>
             <div id="scenarioAlert" class="scenario-alert"></div>
+          </div>
+
+          <div style="margin-top: 16px;">
+            <label for="incomingEmail">Optional: Paste the email you received</label>
+            <textarea
+              id="incomingEmail"
+              placeholder="Paste the email you received here if you want MailMuse to generate a reply. If this field is filled, MailMuse will prioritize reply mode."
+              style="min-height:160px;"
+            ></textarea>
+            <div class="helper">
+              Reply mode: paste the received email here, then describe briefly what you want to reply.
+            </div>
           </div>
 
           <div class="row" style="margin-top: 14px;">
@@ -674,7 +686,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
       </div>
     </div>
 
-    <div class="footer">MailMuse v6 • AI Work Email Generator • Feedback welcome</div>
+    <div class="footer">MailMuse v7 • AI Work Email Generator • Reply mode enabled • Feedback welcome</div>
   </div>
 
   <script>
@@ -795,6 +807,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
     const emailTypeInput = document.getElementById('emailType');
     const scenarioHelper = document.getElementById('scenarioHelper');
     const situationInput = document.getElementById('situation');
+    const incomingEmailInput = document.getElementById('incomingEmail');
     const toneInput = document.getElementById('tone');
     const lengthInput = document.getElementById('length');
     const senderNameInput = document.getElementById('senderName');
@@ -918,7 +931,9 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
       lengthInput.value = example.length;
       recipientNameInput.value = example.recipientName || '';
       situationInput.value = example.situation;
-      autoResizeTextarea();
+      incomingEmailInput.value = '';
+      autoResizeTextarea(situationInput, 175);
+      autoResizeTextarea(incomingEmailInput, 160);
       updateScenarioResolutionUI();
       setStatus(`Loaded example: ${example.label}.`, 'success');
     }
@@ -942,9 +957,9 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
       rewriteBtn.disabled = flag;
     }
 
-    function autoResizeTextarea() {
-      situationInput.style.height = 'auto';
-      situationInput.style.height = `${Math.max(175, situationInput.scrollHeight)}px`;
+    function autoResizeTextarea(el, minHeight = 175) {
+      el.style.height = 'auto';
+      el.style.height = `${Math.max(minHeight, el.scrollHeight)}px`;
     }
 
     function parseEmailForGmail(text) {
@@ -1153,9 +1168,10 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
 
     async function generateEmail() {
       const situation = situationInput.value.trim();
+      const incomingEmail = incomingEmailInput.value.trim();
 
-      if (!situation) {
-        setStatus('Please describe the email situation first.', 'error');
+      if (!situation && !incomingEmail) {
+        setStatus('Please describe the email situation or paste the email you received.', 'error');
         return;
       }
       if (!canGenerateToday()) {
@@ -1166,7 +1182,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
       const scenarioPayload = getScenarioPayloadFromUI();
 
       setGeneratingUI(true, 'Generating...');
-      setStatus('Generating email...', 'info');
+      setStatus(incomingEmail ? 'Generating reply...' : 'Generating email...', 'info');
       resultBox.textContent = 'Thinking...';
       resultBox.classList.remove('empty-state');
 
@@ -1175,6 +1191,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
           action: 'generate',
           ...scenarioPayload,
           situation,
+          incomingEmail,
           tone: toneInput.value,
           length: lengthInput.value,
           senderName: senderNameInput.value.trim(),
@@ -1183,7 +1200,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
 
         resultBox.textContent = data.email.trim();
         incrementUsage();
-        setStatus('Email generated successfully.', 'success');
+        setStatus(incomingEmail ? 'Reply generated successfully.' : 'Email generated successfully.', 'success');
       } catch (error) {
         console.error(error);
         resultBox.textContent = 'Generation failed. Please try again.';
@@ -1201,6 +1218,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
 
       const currentText = resultBox.textContent.trim();
       const situation = situationInput.value.trim();
+      const incomingEmail = incomingEmailInput.value.trim();
       const scenarioPayload = getScenarioPayloadFromUI();
 
       setGeneratingUI(true, 'Rewriting...');
@@ -1212,6 +1230,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
           mode,
           ...scenarioPayload,
           situation,
+          incomingEmail,
           currentEmail: currentText
         });
 
@@ -1240,14 +1259,19 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
     emailTypeInput.addEventListener('change', updateScenarioResolutionUI);
 
     situationInput.addEventListener('input', () => {
-      autoResizeTextarea();
+      autoResizeTextarea(situationInput, 175);
       updateScenarioResolutionUI();
+    });
+
+    incomingEmailInput.addEventListener('input', () => {
+      autoResizeTextarea(incomingEmailInput, 160);
     });
 
     sampleBtn.addEventListener('click', () => {
       loadExample('Client', appData.Client.examples[2]);
       senderNameInput.value = 'Wei Lun';
-      autoResizeTextarea();
+      autoResizeTextarea(situationInput, 175);
+      autoResizeTextarea(incomingEmailInput, 160);
       updateScenarioResolutionUI();
     });
 
@@ -1279,11 +1303,13 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
 
     clearBtn.addEventListener('click', () => {
       situationInput.value = '';
+      incomingEmailInput.value = '';
       senderNameInput.value = '';
       recipientNameInput.value = '';
       emailTypeInput.value = 'Auto detect';
       setEmptyResult();
-      autoResizeTextarea();
+      autoResizeTextarea(situationInput, 175);
+      autoResizeTextarea(incomingEmailInput, 160);
       updateScenarioResolutionUI();
       setStatus('Form cleared.', 'success');
     });
@@ -1296,7 +1322,8 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
     loadStoredAudience();
     refreshUsageBar();
     setEmptyResult();
-    autoResizeTextarea();
+    autoResizeTextarea(situationInput, 175);
+    autoResizeTextarea(incomingEmailInput, 160);
     updateScenarioResolutionUI();
   </script>
 </body>
