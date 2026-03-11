@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MailMuse — AI Work Email Assistant</title>
+  <title>MailMuse — AI Work Email Generator</title>
   <meta
     name="description"
     content="MailMuse helps you write professional work emails for clients, suppliers, and internal teams in seconds."
@@ -492,21 +492,22 @@
         </div>
         <div class="brand-copy">
           <h1>MailMuse</h1>
-          <p>AI Work Email Assistant</p>
+          <p>AI Work Email Generator</p>
         </div>
       </div>
-      <div class="badge">v6 Secure • any input language • any output language</div>
+      <div class="badge">No signup • Multi-language • Ready to test</div>
     </div>
 
     <div class="layout">
       <div class="stack">
         <section class="card">
           <div class="eyebrow">Write better work emails in seconds</div>
-          <h2 class="hero-title">Your AI assistant for every work email.</h2>
+          <h2 class="hero-title">Write professional work emails in seconds.</h2>
           <p class="lead">
-            From clients and suppliers to bosses and colleagues, MailMuse helps you write clear,
-            professional emails faster with less stress and better business English.
+            Describe the situation. MailMuse writes the email for you.
+            Perfect for client follow-ups, supplier communication, and internal updates.
           </p>
+          <div class="helper">Try it instantly — no signup required.</div>
           <div class="mini-grid">
             <div class="mini-box"><strong>Client emails</strong>Follow-ups, payment reminders, proposals, negotiations, meeting requests.</div>
             <div class="mini-box"><strong>Supplier emails</strong>RFQs, delay complaints, order confirmations, pricing discussions.</div>
@@ -528,7 +529,7 @@
         <section class="card">
           <h3>Pricing direction</h3>
           <div class="price-grid">
-            <div class="price-box"><strong>Free</strong>100 emails per browser per day for early testing.</div>
+            <div class="price-box"><strong>Free</strong>3 emails per day to test the workflow.</div>
             <div class="price-box"><strong>Pro</strong>$5/month for higher limits, team usage, and future premium features.</div>
           </div>
           <div class="btn-row" style="margin-top: 14px;">
@@ -630,7 +631,7 @@
           <div class="usage-wrap">
             <div class="usage-head">
               <span><strong>Free plan</strong> usage today</span>
-              <span id="usageLabel">0 / 100 used</span>
+              <span id="usageLabel">0 / 3 used</span>
             </div>
             <div class="progress">
               <div id="usageProgress" class="progress-bar"></div>
@@ -673,7 +674,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
       </div>
     </div>
 
-    <div class="footer">MailMuse v6 • AI Work Email Assistant • secure server-side API</div>
+    <div class="footer">MailMuse v6 • AI Work Email Generator • Feedback welcome</div>
   </div>
 
   <script>
@@ -787,7 +788,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
 
     const USAGE_KEY = 'mailmuse_daily_usage';
     const AUDIENCE_KEY = 'mailmuse_selected_audience';
-    const DAILY_FREE_LIMIT = 5;
+    const DAILY_FREE_LIMIT = 3;
 
     const upgradeBtn = document.getElementById('upgradeBtn');
     const audienceButtons = document.querySelectorAll('.segment-btn');
@@ -1300,4 +1301,3 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
   </script>
 </body>
 </html>
-
