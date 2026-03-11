@@ -4,7 +4,10 @@ export default async function handler(req, res) {
   }
 
   try {
+    const body = req.body || {};
     const {
+      action,
+      mode,
       audience,
       selectedScenario,
       detectedScenario,
@@ -14,37 +17,60 @@ export default async function handler(req, res) {
       length,
       senderName,
       recipientName,
-      requestedOutputLanguage
-    } = req.body || {};
+      requestedOutputLanguage,
+      currentEmail
+    } = body;
+
+    if (action === 'rewrite') {
+      if (!currentEmail) {
+        return res.status(400).json({ error: 'Missing currentEmail' });
+      }
+
+      let instruction = 'Rewrite this email to improve clarity while keeping the meaning the same.';
+      if (mode === 'shorter') {
+        instruction = 'Rewrite this email to be shorter and more concise while keeping the meaning and professional tone.';
+      }
+      if (mode === 'polite') {
+        instruction = 'Rewrite this email to sound more polite, diplomatic, and considerate while keeping the meaning.';
+      }
+      if (mode === 'firm') {
+        instruction = 'Rewrite this email to sound firmer and more direct while still remaining professional and respectful.';
+      }
+      if (mode === 'rewrite') {
+        instruction = 'Rewrite this email to sound more polished, natural, and professional.';
+      }
+
+      const rewritePrompt = `
+You are MailMuse, an expert work email editor.
+
+${instruction}
+
+Rules:
+- Keep the rewritten email in the same language as the current email.
+- If the user clearly requested an output language in the original situation, preserve that language.
+- The requested output language may be any language.
+- Detected output language request from original user situation: ${requestedOutputLanguage || 'Not explicitly specified'}
+- Keep a subject line if one exists.
+- Only output the rewritten email.
+- Do not add commentary.
+- Do not invent new business details.
+
+Original user situation:
+${situation || ''}
+
+Email to rewrite:
+${currentEmail}
+      `.trim();
+
+      const rewrittenEmail = await callOpenAI(rewritePrompt);
+      return res.status(200).json({ email: rewrittenEmail });
+    }
 
     if (!situation) {
       return res.status(400).json({ error: 'Missing situation' });
     }
 
-    const scenarioGuidanceMap = {
-      'General follow-up': 'Keep the email neutral. Do not turn it into quotation follow-up, payment reminder, or order confirmation unless clearly stated.',
-      'Follow-up on quotation': 'Focus on the quotation only if quotation was clearly mentioned in the user situation.',
-      'Payment reminder': 'Keep it polite and not aggressive. Focus only on payment or invoice status.',
-      'Lead time / delivery follow-up': 'Focus only on delivery timing, lead time, or schedule. Do not turn it into quotation or order confirmation unless clearly stated.',
-      'Send proposal': 'Write as a proposal-sharing email only if supported by the situation.',
-      'Negotiation': 'Keep the wording tactful and commercial.',
-      'Apology for delay': 'Acknowledge the delay and be responsible without adding unrelated assumptions.',
-      'Meeting request': 'Keep the request clear and simple.',
-      'Request quotation': 'Ask for quotation details clearly.',
-      'Price negotiation': 'Negotiate price professionally and practically.',
-      'Delivery follow-up': 'Follow up on delivery or shipment only.',
-      'Delay complaint': 'Be firm and factual regarding the delay.',
-      'Order confirmation': 'Confirm the order only if the situation clearly refers to an order.',
-      'Status update': 'Keep it concise and informative.',
-      'Explain delay': 'Explain the reason clearly without over-explaining.',
-      'Request support': 'Ask for help clearly and politely.',
-      'Task follow-up': 'Follow up on the internal task in a neutral way.',
-      'Project update': 'Provide a practical project update.'
-    };
-
-    const scenarioGuidance =
-      scenarioGuidanceMap[finalScenario] ||
-      'Follow the situation exactly as written. Do not add extra business steps.';
+    const scenarioGuidance = getScenarioGuidance(finalScenario);
 
     const lengthRule =
       length === 'Short'
@@ -105,6 +131,13 @@ Write the full email now.
 Only output the email.
     `.trim();
 
+    const email = await callOpenAI(prompt);
+    return res.status(200).json({ email });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Server error' });
+  }
+
+  async function callOpenAI(prompt) {
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -120,12 +153,10 @@ Only output the email.
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({
-        error: data?.error?.message || 'OpenAI request failed'
-      });
+      throw new Error(data?.error?.message || 'OpenAI request failed');
     }
 
-    const email =
+    const outputText =
       data.output_text ||
       (data.output || [])
         .flatMap(item => item.content || [])
@@ -134,12 +165,35 @@ Only output the email.
         .join('\n')
         .trim();
 
-    if (!email) {
-      return res.status(500).json({ error: 'No email returned from model' });
+    if (!outputText) {
+      throw new Error('No email returned from model');
     }
 
-    return res.status(200).json({ email });
-  } catch (error) {
-    return res.status(500).json({ error: error.message || 'Server error' });
+    return outputText;
+  }
+
+  function getScenarioGuidance(finalScenario) {
+    const map = {
+      'General follow-up': 'Keep the email neutral. Do not turn it into quotation follow-up, payment reminder, or order confirmation unless clearly stated.',
+      'Follow-up on quotation': 'Focus on the quotation only if quotation was clearly mentioned in the user situation.',
+      'Payment reminder': 'Keep it polite and not aggressive. Focus only on payment or invoice status.',
+      'Lead time / delivery follow-up': 'Focus only on delivery timing, lead time, or schedule. Do not turn it into quotation or order confirmation unless clearly stated.',
+      'Send proposal': 'Write as a proposal-sharing email only if supported by the situation.',
+      'Negotiation': 'Keep the wording tactful and commercial.',
+      'Apology for delay': 'Acknowledge the delay and be responsible without adding unrelated assumptions.',
+      'Meeting request': 'Keep the request clear and simple.',
+      'Request quotation': 'Ask for quotation details clearly.',
+      'Price negotiation': 'Negotiate price professionally and practically.',
+      'Delivery follow-up': 'Follow up on delivery or shipment only.',
+      'Delay complaint': 'Be firm and factual regarding the delay.',
+      'Order confirmation': 'Confirm the order only if the situation clearly refers to an order.',
+      'Status update': 'Keep it concise and informative.',
+      'Explain delay': 'Explain the reason clearly without over-explaining.',
+      'Request support': 'Ask for help clearly and politely.',
+      'Task follow-up': 'Follow up on the internal task in a neutral way.',
+      'Project update': 'Provide a practical project update.'
+    };
+
+    return map[finalScenario] || 'Follow the situation exactly as written. Do not add extra business steps.';
   }
 }
