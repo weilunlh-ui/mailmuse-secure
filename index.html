@@ -562,7 +562,9 @@
               Upgrade to Pro
             </a>
           </div>
-          <div class="muted-note">Secure payment via PayPal. Upgrade to support MailMuse and unlock higher usage in future versions.</div>
+          <div class="muted-note">
+            Secure payment via PayPal. After payment, please email your PayPal payment confirmation or screenshot to <strong>ezdatalol@gmail.com</strong> to activate Pro access.
+          </div>
         </section>
 
         <section class="card">
@@ -657,6 +659,12 @@
             </div>
           </div>
 
+          <div style="margin-top: 14px;">
+            <label for="proCode">Pro Code <span style="font-weight:400; opacity:0.8;">(optional)</span></label>
+            <input id="proCode" type="text" placeholder="Enter your Pro code" />
+            <div class="helper">If you have a Pro code, enter it here to unlock higher daily usage.</div>
+          </div>
+
           <div class="btn-row" style="margin-top: 16px;">
             <button id="generateBtn" class="btn-primary" type="button">Generate Email</button>
             <button id="copyBtn" class="btn-secondary" type="button">Copy Email</button>
@@ -669,7 +677,7 @@
 
           <div class="usage-wrap">
             <div class="usage-head">
-              <span><strong>Free plan</strong> usage today</span>
+              <span><strong>Usage today</strong></span>
               <span id="usageLabel">0 / 3 used</span>
             </div>
             <div class="progress">
@@ -714,7 +722,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
     </div>
 
     <div class="footer">
-      MailMuse v7.1 • AI Work Email Generator • Reply mode enabled • Feedback welcome
+      MailMuse v7.2 • AI Work Email Generator • Pro code enabled • Feedback welcome
       <small>No email content is stored on our servers. AI generation is processed securely.</small>
     </div>
   </div>
@@ -830,7 +838,10 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
 
     const USAGE_KEY = 'mailmuse_daily_usage';
     const AUDIENCE_KEY = 'mailmuse_selected_audience';
+    const PRO_CODE_KEY = 'mailmuse_pro_code';
     const DAILY_FREE_LIMIT = 3;
+    const DAILY_PRO_LIMIT = 999;
+    const VALID_PRO_CODES = ['MAILMUSEPRO2026'];
 
     const audienceButtons = document.querySelectorAll('.segment-btn');
     const emailTypeInput = document.getElementById('emailType');
@@ -841,6 +852,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
     const lengthInput = document.getElementById('length');
     const senderNameInput = document.getElementById('senderName');
     const recipientNameInput = document.getElementById('recipientName');
+    const proCodeInput = document.getElementById('proCode');
     const generateBtn = document.getElementById('generateBtn');
     const copyBtn = document.getElementById('copyBtn');
     const gmailBtn = document.getElementById('gmailBtn');
@@ -869,6 +881,36 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
       statusBox.className = `status ${type}`;
     }
 
+    function normalizeCode(code) {
+      return (code || '').trim().toUpperCase();
+    }
+
+    function isValidProCode(code) {
+      return VALID_PRO_CODES.includes(normalizeCode(code));
+    }
+
+    function saveProCode(code) {
+      const normalized = normalizeCode(code);
+      if (isValidProCode(normalized)) {
+        localStorage.setItem(PRO_CODE_KEY, normalized);
+        return true;
+      }
+      localStorage.removeItem(PRO_CODE_KEY);
+      return false;
+    }
+
+    function getSavedProCode() {
+      return normalizeCode(localStorage.getItem(PRO_CODE_KEY) || '');
+    }
+
+    function isProUser() {
+      return isValidProCode(getSavedProCode());
+    }
+
+    function getDailyLimit() {
+      return isProUser() ? DAILY_PRO_LIMIT : DAILY_FREE_LIMIT;
+    }
+
     function getTodayString() {
       const now = new Date();
       const y = now.getFullYear();
@@ -895,13 +937,14 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
 
     function refreshUsageBar() {
       const usage = getUsageData();
-      usageLabel.textContent = `${usage.count} / ${DAILY_FREE_LIMIT} used`;
-      const percent = Math.min((usage.count / DAILY_FREE_LIMIT) * 100, 100);
+      const limit = getDailyLimit();
+      usageLabel.textContent = `${usage.count} / ${limit} used`;
+      const percent = Math.min((usage.count / limit) * 100, 100);
       usageProgress.style.width = `${percent}%`;
     }
 
     function canGenerateToday() {
-      return getUsageData().count < DAILY_FREE_LIMIT;
+      return getUsageData().count < getDailyLimit();
     }
 
     function incrementUsage() {
@@ -1204,7 +1247,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
         return;
       }
       if (!canGenerateToday()) {
-        setStatus('Daily free limit reached for this browser. You can connect this to Pro later.', 'error');
+        setStatus('Daily usage limit reached for this browser.', 'error');
         return;
       }
 
@@ -1272,6 +1315,23 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
         setGeneratingUI(false);
       }
     }
+
+    proCodeInput.addEventListener('input', () => {
+      const code = proCodeInput.value;
+      if (!code.trim()) {
+        localStorage.removeItem(PRO_CODE_KEY);
+        refreshUsageBar();
+        setStatus('Pro code removed.', 'info');
+        return;
+      }
+
+      if (saveProCode(code)) {
+        setStatus('Pro code accepted. Higher daily usage unlocked.', 'success');
+      } else {
+        setStatus('Invalid Pro code.', 'error');
+      }
+      refreshUsageBar();
+    });
 
     audienceButtons.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1345,6 +1405,7 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
     rewriteBtn.addEventListener('click', () => rewriteResult('rewrite'));
 
     loadStoredAudience();
+    proCodeInput.value = getSavedProCode();
     refreshUsageBar();
     setEmptyResult();
     autoResizeTextarea(situationInput, 175);
