@@ -14,11 +14,6 @@
   />
   <link rel="icon" type="image/png" href="mailmuse-logo.png" />
 
-  <!-- Replace YOUR_DOMAIN with your actual deployed domain when you set up Plausible -->
-  <!-- Example:
-  <script defer data-domain="mailmuse-secure.vercel.app" src="https://plausible.io/js/script.js"></script>
-  -->
-
   <style>
     :root {
       --bg: #0b1020;
@@ -276,6 +271,13 @@
       border: 1px solid rgba(255,255,255,0.1);
     }
 
+    a.btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+
     .segment-btn {
       border-radius: 999px;
       padding: 10px 16px;
@@ -414,8 +416,8 @@
     }
 
     .scenario-debug {
+      display: none;
       margin-top: 12px;
-      display: grid;
       gap: 8px;
     }
 
@@ -546,22 +548,21 @@
         <section class="card">
           <h3>Pricing direction</h3>
           <div class="price-grid">
-            <div class="price-box"><strong>Free</strong>3 emails per day to test the workflow.</div>
-            <div class="price-box"><strong>Pro</strong>Pro — $5 one-time early supporter access.</div>
+            <div class="price-box"><strong>Free</strong>3 emails per day per browser to test the workflow.</div>
+            <div class="price-box"><strong>Pro</strong>$5 one-time early supporter access.</div>
           </div>
           <div class="btn-row" style="margin-top: 14px;">
-          <a
-            id="upgradeBtn"
-            class="btn-secondary"
-            href="https://paypal.me/LunLoh/5USD"
-            target="_blank"
-            rel="noopener noreferrer"
-            style="display:inline-flex; align-items:center; justify-content:center; text-decoration:none;"
-           >
-            Upgrade to Pro
-          </a>
+            <a
+              id="upgradeBtn"
+              class="btn-secondary"
+              href="https://paypal.me/LunLoh/5USD"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Upgrade to Pro
+            </a>
           </div>
-          <div class="muted-note">Upgrade to Pro to support MailMuse and unlock higher usage in future versions. Secure payment via PayPal.</div>
+          <div class="muted-note">Secure payment via PayPal. Upgrade to support MailMuse and unlock higher usage in future versions.</div>
         </section>
 
         <section class="card">
@@ -831,7 +832,6 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
     const AUDIENCE_KEY = 'mailmuse_selected_audience';
     const DAILY_FREE_LIMIT = 3;
 
-    const upgradeBtn = document.getElementById('upgradeBtn');
     const audienceButtons = document.querySelectorAll('.segment-btn');
     const emailTypeInput = document.getElementById('emailType');
     const scenarioHelper = document.getElementById('scenarioHelper');
@@ -863,12 +863,6 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
 
     let currentAudience = 'Client';
     let isGenerating = false;
-
-    function trackEvent(name) {
-      if (typeof window.plausible === 'function') {
-        window.plausible(name);
-      }
-    }
 
     function setStatus(message, type = 'info') {
       statusBox.textContent = message;
@@ -1214,8 +1208,6 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
         return;
       }
 
-      trackEvent('generate-email');
-
       const scenarioPayload = getScenarioPayloadFromUI();
 
       setGeneratingUI(true, 'Generating...');
@@ -1280,11 +1272,6 @@ Choose an audience and scenario, or use a quick example to test MailMuse instant
         setGeneratingUI(false);
       }
     }
-
-    upgradeBtn.addEventListener('click', () => {
-      trackEvent('upgrade-click');
-      setStatus('Connect this button to your PayPal payment link later.', 'info');
-    });
 
     audienceButtons.forEach(btn => {
       btn.addEventListener('click', () => {
